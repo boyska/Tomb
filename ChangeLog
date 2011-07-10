@@ -1,4 +1,7 @@
 
+July 2011 - 1.1.1
+	Very small fixes; packaging issues and documentation
+
 May 2011 - 1.1
 	Fixes to mime types, icons and desktop integration. A new 'list'
 	command provides an overview on all tombs currently open. Now a

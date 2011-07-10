@@ -64,7 +64,7 @@ knowing the password used in steganography.
 See the [[manual.html][manpage]] for more information on how to operate Tomb from the
 text terminal.
 <example>
-Tomb 1.1 - a strong and gentle undertaker for your secrets
+Tomb 1.1.1 - a strong and gentle undertaker for your secrets
 
 Syntax: tomb [options] command [file] [place]
 
@@ -212,7 +212,7 @@ Tomb is [[https://aur.archlinux.org/packages.php?ID=48257][packaged in AUR]], ch
 
 *** Source Code
 
-Latest stable release is 1.1 (May 2011), see the [[ftp://ftp.dyne.org/tomb/ChangeLog][ChangeLog]].
+Latest stable release is 1.1.1 (July 2011), see the [[ftp://ftp.dyne.org/tomb/ChangeLog][ChangeLog]].
 
 Source releases are signed by [[http://jaromil.dyne.org][Jaromil]] using [[http://www.gnupg.org][GnuPG]] and MD5 hashes.
 

@@ -1510,6 +1510,7 @@ main() {
 
 check_bin
 main $@
-if [[ $? != 0 ]]; then #this "if" seems useless, but avoid source tomb source from exiting
-    exit $?
+ret=$?
+if [[ $ret != 0 ]]; then #this "if" seems useless, but avoid source tomb source from exiting
+    exit $ret
 fi

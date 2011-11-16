@@ -40,16 +40,33 @@ typeset -A opts
 
 # standard output message routines
 # it's always useful to wrap them, in case we change behaviour later
-notice() { if [[ $QUIET == 0 ]]; then print "$fg_bold[green][*]$fg_no_bold[white] $1" >&2; fi }
-error()  { if [[ $QUIET == 0 ]]; then print "$fg[red][!]$fg[white] $1" >&2; fi }
+#TODO: should implement machine parseable progress():
+#      $1 is "what is progressing" $2 is "percentage" $3 is (eventually blank) "description"
+notice() {
+if [[ $QUIET == 0 ]]; then
+    if option_is_set --machine-parseable; then
+        print -n '[m]'
+    fi
+    print "$fg_bold[green][*]$fg_no_bold[white] $1" >&2;
+fi }
+error()  {
+if [[ $QUIET == 0 ]]; then
+    if option_is_set --machine-parseable; then
+        print -n '[m]'
+    fi
+    print "$fg[red][!]$fg[white] $1" >&2;
+fi }
 func()   { if [[ $DEBUG == 1 ]]; then   print "$fg[blue][D]$fg[white] $1" >&2; fi }
 act()    {
     if [[ $QUIET == 0 ]]; then
-	if [ "$1" = "-n" ]; then
-	    print -n "$fg_bold[white] . $fg_no_bold[white] $2" >&2;
-	else
-	    print "$fg_bold[white] . $fg_no_bold[white] $1" >&2;
-	fi
+        if option_is_set --machine-parseable; then
+            print -n '[m]'
+        fi
+        if [ "$1" = "-n" ]; then
+            print -n "$fg_bold[white] . $fg_no_bold[white] $2" >&2;
+        else
+            print "$fg_bold[white] . $fg_no_bold[white] $1" >&2;
+        fi
     fi
 }
 
@@ -1381,7 +1398,7 @@ main() {
     #       I. usability; user expect that "-s" is "size
     #       II. Option parsing WILL EXPLODE if you do this kind of bad things
     #               (it will say "option defined more than once, and he's right")
-    main_opts=(q -quiet=q D -debug=D h -help=h v -version=v -no-color)
+    main_opts=(q -quiet=q D -debug=D h -help=h v -version=v -no-color -machine-parseable)
     subcommands_opts[__default]=""
     subcommands_opts[open]="n -nohook=n k: -key=k o: -mount-options=o -ignore-swap"
     subcommands_opts[mount]=${subcommands_opts[open]}
@@ -1455,6 +1472,9 @@ main() {
   fi
   ### End parsing command-specific options
 
+    if option_is_set --machine-parseable; then
+        opts[--no-color]=''
+    fi
     if ! option_is_set --no-color; then
         autoload colors; colors
     fi

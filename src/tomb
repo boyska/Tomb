@@ -43,14 +43,15 @@ typeset -A opts
 notice() {
 if [[ $QUIET == 0 ]]; then
     if option_is_set --machine-parseable; then
-        print -n '[m]'
+        print -n '[m]' >&2
     fi
     print "$fg_bold[green][*]$fg_no_bold[white] $1" >&2;
 fi }
 error()  {
 if [[ $QUIET == 0 ]]; then
     if option_is_set --machine-parseable; then
-        print -n '[m]'
+        print -n '[m]' >&2
+
     fi
     print "$fg[red][!]$fg[white] $1" >&2;
 fi }
@@ -58,7 +59,8 @@ func()   { if [[ $DEBUG == 1 ]]; then   print "$fg[blue][D]$fg[white] $1" >&2; f
 act()    {
     if [[ $QUIET == 0 ]]; then
         if option_is_set --machine-parseable; then
-            print -n '[m]'
+            print -n '[m]' >&2
+
         fi
         if [ "$1" = "-n" ]; then
             print -n "$fg_bold[white] . $fg_no_bold[white] $2" >&2;
@@ -86,7 +88,8 @@ progress() {
     if ! option_is_set --machine-parseable; then
         return
     fi
-    print "[m][P][$1][$2][$3]"
+    print "[m][P][$1][$2][$3]" >&2
+
 }
 
 check_bin() {

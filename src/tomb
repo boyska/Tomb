@@ -330,6 +330,29 @@ EOF
 '
 }
 
+watch_size() {
+    # TODO: ensure it is killed when tomb exits
+    # $1 is file to watch (maybe non existing yet)
+    # $2 is size target. optional
+    local filename=$1
+    local size=$2
+
+    local oldsize=0
+    echo ''
+    while true; do
+        s=`stat $filename -c '%s'`
+        if [[ $s -gt $oldsize ]]; then
+            echo -en "\rdd $s"
+            progress dd $s $filename
+        fi
+        if [[ $size -gt 0 ]] && [[ $s -ge $size ]]; then
+            echo -e "\rCompleted: $size bytes written"
+            exit 0
+        fi
+        oldsize=$s
+        sleep 0.1
+    done
+}
 create_tomb() {
     if ! option_is_set --ignore-swap && [[ `check_swap out` == 1 ]]; then
         error "You have swap activated; use --ignore-swap if you want to skip this check"
@@ -385,7 +408,11 @@ create_tomb() {
 
     tombsize_4k=`expr $tombsize \* 1024 / 4`
     act "Generating ${tombfile} of ${tombsize}Mb (${tombsize_4k} blocks of 4Kb)"
-    $DD if=/dev/urandom bs=4k count=${tombsize_4k} of=${tombdir}/${tombfile}
+    watch_size ${tombdir}/${tombfile} $(( tombsize * 1024 * 1024 )) &
+    dd if=/dev/urandom bs=4k count=${tombsize_4k} of=${tombdir}/${tombfile}
+    if jobs %watch_size &> /dev/null; then
+        kill %watch_size
+    fi
 
     if [ $? = 0 -a -e ${tombdir}/${tombfile} ]; then
 	act "OK: `ls -lh ${tombdir}/${tombfile}`"
@@ -420,10 +447,10 @@ create_tomb() {
     act "To make it faster you can move the mouse around"
     touch ${keytmp}/tomb.tmp
     chmod 0600 ${keytmp}/tomb.tmp
-    if [[ $DD = "dcfldd" ]]; then
-        $DD bs=1 count=256 if=/dev/random of=${keytmp}/tomb.tmp statusinterval=1
-    else
-        $DD bs=1 count=256 if=/dev/random of=${keytmp}/tomb.tmp
+    watch_size ${keytmp}/tomb.tmp 256 &
+    dd bs=1 count=256 if=/dev/random of=${keytmp}/tomb.tmp
+    if jobs %watch_size &> /dev/null; then
+        kill %watch_size
     fi
     if ! [ -r ${keytmp}/tomb.tmp ]; then
 	error "cannot generate encryption key, operation aborted."

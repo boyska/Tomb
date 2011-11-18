@@ -332,6 +332,7 @@ EOF
 
 watch_size() {
     # TODO: ensure it is killed when tomb exits
+    # TODO: when it is killed, it should say progress dd 100 $filename
     # $1 is file to watch (maybe non existing yet)
     # $2 is size target. optional
     local filename=$1
@@ -341,9 +342,10 @@ watch_size() {
     echo ''
     while true; do
         s=`stat $filename -c '%s'`
+        perc=$((s * 100 / size))
         if [[ $s -gt $oldsize ]]; then
-            echo -en "\rdd $s"
-            progress dd $s $filename
+            print -n "\rdd ${perc}%"
+            progress dd $perc $filename
         fi
         if [[ $size -gt 0 ]] && [[ $s -ge $size ]]; then
             echo -e "\rCompleted: $size bytes written"

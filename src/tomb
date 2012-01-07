@@ -771,10 +771,13 @@ mount_tomb() {
     tombfile=`basename ${CMD2}`
     tombdir=`dirname ${CMD2}`
     # check file type (if its a Luks fs)
-    file ${tombdir}/${tombfile} | grep -i 'luks encrypted file' 2>&1 >/dev/null
+    cryptsetup isLuks ${tombdir}/${tombfile} &>/dev/null
     if [ $? != 0 ]; then
-	_warning "$CMD2 is not a valid tomb file, operation aborted"
-	return 1
+        if option_is_set -f; then
+            _warning "$CMD2 doesn't seem a valid tomb file, but continuing anyway (because you used --force)"
+        else
+            die "$CMD2 is not a valid tomb file, operation aborted" 1
+        fi
     fi
     tombname=${tombfile%%\.*}
     xxx "tomb found: ${tombdir}/${tombfile}"
@@ -1432,7 +1435,7 @@ main() {
     #               (it will say "option defined more than once, and he's right")
     main_opts=(q -quiet=q D -debug=D h -help=h v -version=v -no-color)
     subcommands_opts[__default]=""
-    subcommands_opts[open]="n -nohook=n k: -key=k o: -mount-options=o -ignore-swap"
+    subcommands_opts[open]="n -nohook=n k: -key=k o: -mount-options=o -ignore-swap f -force=f"
     subcommands_opts[mount]=${subcommands_opts[open]}
     subcommands_opts[create]="s: -size=s -ignore-swap k: -key=k"
     subcommands_opts[passwd]="-ignore-swap"

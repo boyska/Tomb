@@ -5,6 +5,7 @@ from PyQt4 import QtCore, QtGui
 from ui_open_tombfile import Ui_tombfile
 from ui_open_keymethod import Ui_keymethod
 from ui_open_success import Ui_success
+from ui_open_opening import Ui_opening
 
 from tomblib.tomb import Tomb
 from tomblib.undertaker import Undertaker
@@ -64,6 +65,12 @@ class SuccessPage(QtGui.QWizardPage):
         QtGui.QWizardPage.__init__(self, *args, **kwargs)
         self.ui = Ui_success()
         self.ui.setupUi(self)
+
+class OpeningPage(QtGui.QWizardPage):
+    def __init__(self, *args, **kwargs):
+        QtGui.QWizardPage.__init__(self, *args, **kwargs)
+        self.ui = Ui_opening()
+        self.ui.setupUi(self)
         self.parent().currentIdChanged.connect(self.on_change)
 
     def on_change(self, id):
@@ -75,8 +82,9 @@ class SuccessPage(QtGui.QWizardPage):
         print 'path is', path
         if Tomb.open(self.wizard().get_tombfile(), Undertaker.pipe(path)):
             self.wizard().next()
-        QtCore.qCritical( 'Cannot open the tomb' )
-        sys.exit(1)
+        else:
+            QtCore.qCritical( 'Cannot open the tomb' )
+            sys.exit(1)
 
 class TombOpenWizard(QtGui.QWizard):
     TOMBFILE_PAGE=1
@@ -90,8 +98,8 @@ class TombOpenWizard(QtGui.QWizard):
                 TombfilePage(self, tombfile = kwargs['tombfile']
                     if 'tombfile' in kwargs else None))
         self.setPage(TombOpenWizard.METHOD_PAGE, MethodPage(self))
+        self.setPage(TombOpenWizard.OPENING_PAGE, OpeningPage(self))
         self.setPage(TombOpenWizard.SUCCESS_PAGE, SuccessPage(self))
-        self.setPage(TombOpenWizard.OPENING_PAGE, SuccessPage(self)) #TODO: create a new one
         if 'tombfile' in kwargs and kwargs['tombfile'] is not None:
             self.setStartId(TombOpenWizard.METHOD_PAGE)
 

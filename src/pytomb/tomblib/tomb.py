@@ -73,14 +73,21 @@ class Tomb(object):
     @classmethod
     def open(cls, tombpath,keypath=None, no_color=True, ignore_swap=False):
         args = [tombpath]
+        stdin = None
         if keypath is not None:
-            args += ['-k', keypath]
+            if keypath is False:
+                raise ValueError('False is not a valid keypath (pipe error?)')
+            if keypath is str:
+                args += ['-k', keypath]
+            else:
+                args += ['-k', '-']
+                stdin = keypath
         if no_color:
             args += ['--no-color']
         if ignore_swap:
             args += ['--ignore-swap']
         try:
-            subprocess.check_call([cls.tombexec, 'open'] + args)
+            subprocess.check_call([cls.tombexec, 'open'] + args, stdin=stdin)
         except subprocess.CalledProcessError:
             return False
         return True

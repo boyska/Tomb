@@ -73,6 +73,18 @@ class Undertaker(object):
         buf.seek(0)
         return buf.read()
 
+    @classmethod
+    def pipe(cls, path):
+        '''
+        You probably want this, if your real goal is opening the tomb.
+        Tomb.open(/path/to/your.tomb,
+            Undertaker.pipe('near:///path/to/your.tomb'))
+        is usually what you need
+        '''
+        p = subprocess.Popen([cls.undertakerexec, path, '--batch'],
+                stdout=subprocess.PIPE)
+        return p.stdout
+
 
 if __name__ == '__main__':
     Undertaker.undertakerexec = '/home/davide/coding/projects/tomb/src/undertaker'

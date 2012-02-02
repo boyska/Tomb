@@ -906,7 +906,7 @@ mount_tomb() {
 
 	# if key was from stdin delete temp file and dir
 	if [ $tombkeydir ]; then
-	    ${WIPE[@]} ${tombkey}
+	    ${=WIPE} ${tombkey}
 	    rmdir $tombkeydir
 	fi
 

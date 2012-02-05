@@ -136,24 +136,24 @@ function undertaker_scheme() {
 #does NOT check whether the output buffer has been closed What <() does is
 #making it a child of INIT writing to a named pipe. So now we have the problem
 #of leaving a lot of udisks --monitor around
-                device=`egrep '/sd[a-z][0-9]' -o -m1 <(udisks --monitor)`
-                device =$(awk '/added:.*sd[a-z][0-9]/ {
+                #device=`egrep '/sd[a-z][0-9]' -o -m1 <(udisks --monitor)`
+                device=$(awk '/added:.*sd[a-z][0-9]/ {
                         match($0, /sd[a-z][0-9]/, Arr)
                             printf "%s\n", Arr[0]
                                 exit
                             }
                             ' <(udisks --monitor)
                 )
-                device=/dev/$device
-                echo "found $device, sleeping"
+                device="/dev/${device}"
                 sleep 1
-                udisks --mount $device
+                udisks --mount $device > /dev/null #udisks print something to output. we hate output. we are the only one that can output. grrrr
                 ###get mountpoint for device
                 mountpoint=`egrep "^${device} " /etc/mtab|cut -d ' ' -f2`
                 if [[ -n $mountpoint ]]; then
-                    undertaker_scheme ${print_path[@]} file ${mountpoint}/${keypath}
+                    undertaker_scheme ${print_path[@]} file ${mountpoint}${keypath}
                 else
                     _warning "Could not mount $device"
+                    continue
                 fi
                 ret=$?
                 udisks --unmount $device

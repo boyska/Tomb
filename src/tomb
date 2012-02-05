@@ -813,24 +813,32 @@ mount_tomb() {
     xxx "tomb found: ${tombdir}/${tombfile}"
 
     if option_is_set -k ; then
-	if [[ "`option_value -k`" == "-" ]]; then
-	    # take key from stdin
-	    local tombkeydir
-	    tombkeydir=`safe_dir`
-	    cat > ${tombkeydir}/stdin.tmp
-	    tombkey=${tombkeydir}/stdin.tmp
-	else
-	    # take key from a file
-            tombkey=`option_value -k`
-	fi
+        if [[ "`option_value -k`" == "-" ]]; then
+            # take key from stdin
+            local tombkeydir
+            tombkeydir=`safe_dir`
+            > ${tombkeydir}/stdin.tmp
+            tombkey=${tombkeydir}/stdin.tmp
+        else
+            # take key from a file
+                tombkey=`option_value -k`
+        fi
     else
-	# guess key as lying besides the tomb
+        # guess key as lying besides the tomb
         tombkey=${tombdir}/${tombfile}.key
     fi
     if ! [ -r ${tombkey} ]; then
-	_warning "key file not found: ${tombkey}"
-	_warning "operation aborted."
-	return 1
+        _warning "key file not found: ${tombkey}"
+        _warning "operation aborted."
+        return 1
+    fi
+    if ! file -ikb ${tombkey} | egrep '^application\/pgp' &> /dev/null; then
+        _warning "key file does not seem a tomb key"
+        file -ik ${tombkey} >&2
+        < ${tombkey} >&2
+        if ! option_is_set -f; then
+            die "aborting: you can avoid this using -f (force) option"
+        fi
     fi
 
     if ! [ $2 ]; then

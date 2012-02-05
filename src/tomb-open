@@ -76,7 +76,7 @@ Let's start setting your Crypt?"
 # so that they are configurable when calling tomb.
 ask_usbkey() {
     unset usbkey_mount
-    notice "Waiting 1 minute for a usb key to connect"
+    _message "Waiting 1 minute for a usb key to connect"
     act -n "please insert your usb key "
     
     tomb-notify "Insert your USB KEY" \
@@ -267,10 +267,10 @@ if [ -r $HOME/Desktop ]; then
     cd $HOME/Desktop;
 # or inside HOME
 else cd $HOME; fi
-notice "Tomb  -  simple commandline tool for encrypted storage"
+_message "Tomb  -  simple commandline tool for encrypted storage"
 act "version $VERSION ($DATE) by Jaromil @ dyne.org"
 echo
-notice "Guided creation of a new Tomb"
+_message "Guided creation of a new Tomb"
 cat <<EOF
 
   A Tomb is  a special folder that keeps files  safe using a password:
@@ -295,10 +295,10 @@ if [ "$?" != 0 ]; then
     exit 1
 fi
     # let's proceed
-notice "Please type in the name for your new tomb file:"
+_message "Please type in the name for your new tomb file:"
 echo -n "> "
 read -u 1 tombname
-notice "How big you want the Tomb to be?"
+_message "How big you want the Tomb to be?"
 act "Type a size number in Megabytes:"
 echo -n "> "
 read -u 1 tombsize
@@ -307,7 +307,7 @@ if [[ "$tombsize" != <-> ]]; then
 	exit 1
 fi
 clear
-notice "You have commanded the creation of this Tomb:"
+_message "You have commanded the creation of this Tomb:"
 act "$tombname ( $tombsize MBytes )";
 echo
 cat <<EOF
@@ -325,7 +325,7 @@ cat <<EOF
   Considering 1GB takes usually little less than an hour to be digged.
 
 EOF
-notice "  Digging will take quite some time! Should we start? (y/n)"
+_message "  Digging will take quite some time! Should we start? (y/n)"
 echo -n "> "
 read -q
 if [ $? != 0 ]; then
@@ -365,7 +365,7 @@ if [ $? = 0 ]; then
 	sudo cp -v ${tombfile}.key ${usbkey_mount}/.tomb/
 	sudo chmod -R go-rwx ${usbkey_mount}/.tomb
 
-	notice "${tombname}.key succesfully saved on your USB"
+	_message "${tombname}.key succesfully saved on your USB"
 	act "now we'll proceed opening your brand new tomb"
 
 	"${TOMBEXEC}" open -k ${tombfile}.key ${tombfile}

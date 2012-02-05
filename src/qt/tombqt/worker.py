@@ -7,6 +7,7 @@ from PyQt4 import QtCore
 parentdir = sys.path[0].split(os.sep)[:-1]
 sys.path.append(os.sep.join(parentdir))
 from tomblib.tomb import Tomb
+from tomblib.undertaker import Undertaker
 from tomblib.parser import parse_line
 
 class TombCreateThread(QtCore.QThread):
@@ -31,6 +32,7 @@ class TombCreateThread(QtCore.QThread):
     
     def get_success(self):
         return self.status
+
 
 class TombOutputThread(QtCore.QThread):
     line_received = QtCore.pyqtSignal(QtCore.QString)
@@ -60,3 +62,17 @@ class TombOutputThread(QtCore.QThread):
         parsed = parse_line(line)
         if parsed and parsed['type'] == 'error':
             self.error_received.emit(parsed.content)
+
+
+class TombOpenThread(QtCore.QThread):
+    def __init__(self, tombpath, keypath, **opts):
+        QtCore.QThread.__init__(self)
+        self.tombpath = tombpath
+        self.keypath = keypath
+        self.opts = opts
+
+    def run(self):
+        self.status = Tomb.open(self.tombpath,
+                Undertaker.pipe(self.keypath))
+    def get_success(self):
+        return self.status

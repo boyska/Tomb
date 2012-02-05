@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tombqt/open_keymethod.ui'
 #
-# Created: Sat Jan 28 03:36:11 2012
+# Created: Sun Feb  5 23:07:19 2012
 #      by: PyQt4 UI code generator 4.9
 #
 # WARNING! All changes made in this file will be lost!
@@ -25,14 +25,19 @@ class Ui_keymethod(object):
         self.radio_layout = QtGui.QVBoxLayout()
         self.radio_layout.setObjectName(_fromUtf8("radio_layout"))
         self.fs = QtGui.QRadioButton(keymethod)
+        self.fs.setChecked(True)
+        self.fs.setProperty("keymethod_type", _fromUtf8("fs"))
         self.fs.setObjectName(_fromUtf8("fs"))
         self.radio_layout.addWidget(self.fs)
         self.usb = QtGui.QRadioButton(keymethod)
-        self.usb.setEnabled(False)
+        self.usb.setEnabled(True)
+        self.usb.setCheckable(True)
+        self.usb.setProperty("keymethod_type", _fromUtf8("usb"))
         self.usb.setObjectName(_fromUtf8("usb"))
         self.radio_layout.addWidget(self.usb)
         self.bluetooth = QtGui.QRadioButton(keymethod)
         self.bluetooth.setEnabled(False)
+        self.bluetooth.setProperty("keymethod_type", _fromUtf8("bluetooth"))
         self.bluetooth.setObjectName(_fromUtf8("bluetooth"))
         self.radio_layout.addWidget(self.bluetooth)
         self.verticalLayout.addLayout(self.radio_layout)

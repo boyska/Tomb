@@ -40,15 +40,24 @@
        <property name="checked">
         <bool>true</bool>
        </property>
+       <property name="keymethod_type" stdset="0">
+        <string notr="true">fs</string>
+       </property>
       </widget>
      </item>
      <item>
       <widget class="QRadioButton" name="usb">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="text">
         <string>USB drive</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="keymethod_type" stdset="0">
+        <string notr="true">usb</string>
        </property>
       </widget>
      </item>
@@ -59,6 +68,9 @@
        </property>
        <property name="text">
         <string>Retrieve via bluetooth (advanced)</string>
+       </property>
+       <property name="keymethod_type" stdset="0">
+        <string notr="true">bluetooth</string>
        </property>
       </widget>
      </item>

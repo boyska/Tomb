@@ -1,19 +1,23 @@
 import sys
+import os.path
 
 from PyQt4 import QtCore, QtGui
+
+from tomblib.tomb import Tomb
+from tomblib.undertaker import Undertaker
 
 from ui_open_tombfile import Ui_tombfile
 from ui_open_keymethod import Ui_keymethod
 from ui_open_success import Ui_success
 from ui_open_opening import Ui_opening
 
-from tomblib.tomb import Tomb
-from tomblib.undertaker import Undertaker
+from worker import TombOpenThread
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
     _fromUtf8 = lambda s: s
+
 
 class TombfilePage(QtGui.QWizardPage):
     def __init__(self, *args, **kwargs):
@@ -28,6 +32,7 @@ class TombfilePage(QtGui.QWizardPage):
                 filter="Tomb (*.tomb)")
         self.ui.tomb_line.setText(filename)
 
+
 class MethodPage(QtGui.QWizardPage):
     def __init__(self, *args, **kwargs):
         QtGui.QWizardPage.__init__(self, *args, **kwargs)
@@ -39,7 +44,7 @@ class MethodPage(QtGui.QWizardPage):
                 group.addButton(radio)
 
     def initializePage(self):
-        self.found = Undertaker.check( str('near://' + self.wizard().get_tombfile()) ) or []
+        self.found = Undertaker.check( 'near://' + self.wizard().get_tombfile() ) or []
         box = self.ui.radio_layout
 
         for key in self.found:
@@ -50,21 +55,12 @@ class MethodPage(QtGui.QWizardPage):
             self.group.addButton(radio)
 
 
-    def nextId(self):
-        '''Virtual method reimplemented to decide next page'''
-#FIXME: detect if this is called on _incoming_ or _outgoing_
-#FIXME: this seem to be called multiple times
-        if self.ui.usb.isChecked():
-            return TombOpenWizard.USB_PAGE
-#if no standard method, it is the "automatically detected" path
-        return TombOpenWizard.OPENING_PAGE
-
-
 class SuccessPage(QtGui.QWizardPage):
     def __init__(self, *args, **kwargs):
         QtGui.QWizardPage.__init__(self, *args, **kwargs)
         self.ui = Ui_success()
         self.ui.setupUi(self)
+
 
 class OpeningPage(QtGui.QWizardPage):
     def __init__(self, *args, **kwargs):
@@ -72,26 +68,47 @@ class OpeningPage(QtGui.QWizardPage):
         self.ui = Ui_opening()
         self.ui.setupUi(self)
         self.parent().currentIdChanged.connect(self.on_change)
+        self.status = 0 #Internal:  0 = haven't done anything
+                        #           1 = success
+                        #           2 = error
 
     def on_change(self, id):
         '''Called when the user arrives to this page'''
-#FIXME: this should be done in a "opening..." page, not success!
         if id != TombOpenWizard.OPENING_PAGE:
             return
         path = self.wizard().get_tombkeyfile()
-        print 'path is', path
-        if Tomb.open(self.wizard().get_tombfile(), Undertaker.pipe(path)):
+        if path.startswith('udisks:'):
+            self.ui.label.setText(self.ui.label.text() + \
+                    '<br/><strong>Insert your usb key</strong>')
+#TODO: async
+        self.thread = TombOpenThread(self.wizard().get_tombfile(), path)
+        self.thread.finished.connect(self.on_thread_finished)
+        self.thread.terminated.connect(self.on_thread_finished)
+        self.thread.start()
+
+    def on_thread_finished(self):
+        if self.thread.get_success():
+            self.status = 1
             self.wizard().next()
         else:
+            self.ui.label.setText('Error opening the tomb')
             QtCore.qCritical( 'Cannot open the tomb' )
-            sys.exit(1)
+            self.status = 2
+
+    def isComplete(self):
+        if self.status == 2:
+            return False
+        if self.status == 1:
+            return True
+        return False
+
+
 
 class TombOpenWizard(QtGui.QWizard):
     TOMBFILE_PAGE=1
     METHOD_PAGE=2
     OPENING_PAGE=30
     SUCCESS_PAGE=99
-    USB_PAGE=20
     def __init__(self, *args, **kwargs):
         QtGui.QWizard.__init__(self, *args)
         self.setPage(TombOpenWizard.TOMBFILE_PAGE,
@@ -105,20 +122,28 @@ class TombOpenWizard(QtGui.QWizard):
 
     def get_tombfile(self):
         page = self.page(TombOpenWizard.TOMBFILE_PAGE)
-        return page.ui.tomb_line.text()
+        return str(page.ui.tomb_line.text())
 
     def get_tombkeyfile(self):
         page = self.page(TombOpenWizard.METHOD_PAGE)
         button = page.group.checkedButton()
         path = button.property('path').toPyObject()
-        if path is not None:
+        if path:
             return path
-        #TODO: this should depend on selected method
-        path = QtGui.QFileDialog.getOpenFileName(self, 'Key file',
-                filter="Tomb keys (*.tomb.key);;Buried keys (*.jpeg)")
-        path = 'file://' + path
-        button.setProperty('path', path)
-        return path
+        method_type = button.property('keymethod_type').toPyObject()
+        if method_type == 'fs':
+            path = 'file://' + QtGui.QFileDialog.getOpenFileName(self,
+                    'Key file',
+                    filter="Tomb keys (*.tomb.key);;Buried keys (*.jpeg)")
+            button.setProperty('path', path)
+        elif method_type == 'usb':
+            path = 'udisks:///.tomb/' + os.path.basename(self.get_tombfile()) \
+                    + '.key'
+        else:
+            path = button.property('path').toPyObject()
+        if path is not None:
+            return str(path)
+        return None
 
 
         

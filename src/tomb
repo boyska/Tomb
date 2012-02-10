@@ -225,7 +225,7 @@ safe_filename() {
 check_swap() {
     # Return 0 if NO swap is used, 1 if swap is used
     # Return 2 if swap(s) is(are) used, but ALL encrypted
-    local swaps=$(awk '/partition/ { print $1 }' /proc/swaps 2>/dev/null)
+    local swaps=$(awk 'NR>1 { print $1 }' /proc/swaps 2>/dev/null)
     [[ -z "$swaps" ]] && return 0                # No swap partition is active
     no  "An active swap partition is detected, this poses security risks."
     no  "You can deactivate all swap partitions using the command:"
@@ -608,7 +608,9 @@ exec_safe_post_hooks() {
 
 create_tomb() {
     _message "Commanded to create tomb $1"
-    if ! option_is_set -f; then check_swap; fi
+    if ! option_is_set -f && ! option_is_set --ignore-swap; then
+        check_swap;
+    fi
 
     if ! [ $1 ]; then
         _warning "no tomb name specified for creation"
@@ -783,7 +785,9 @@ create_tomb() {
 # $1 = tombfile $2(optional) = mountpoint
 mount_tomb() {
     _message "Commanded to open tomb $1"
-    if ! option_is_set -f; then check_swap; fi
+    if ! option_is_set -f && ! option_is_set --ignore-swap; then
+        check_swap
+    fi
 
     if ! [ ${1} ]; then
         _warning "no tomb name specified for creation"
@@ -1125,7 +1129,9 @@ umount_tomb() {
 # change tomb key password
 change_passwd() {
     _message "Commanded to change password for tomb key $1"
-    if ! option_is_set -f; then check_swap; fi
+    if ! option_is_set -f && ! option_is_set --ignore-swap; then
+        check_swap
+    fi
 
     local keyfile="$1"
 
@@ -1635,7 +1641,7 @@ main() {
     #    If you want to use the same option in multiple commands then
     #    you can only use the non-abbreviated long-option version like:
     #    -force and NOT -f
-	main_opts=(q -quiet=q D -debug=D h -help=h v -version=v -no-color)
+	main_opts=(q -quiet=q D -debug=D h -help=h v -version=v -no-color -ignore-swap)
     subcommands_opts[__default]=""
     subcommands_opts[open]="f n -nohook=n k: -key=k o: -mount-options=o"
     subcommands_opts[mount]=${subcommands_opts[open]}
@@ -1656,7 +1662,7 @@ main() {
     subcommands_opts[source]=""
     subcommands_opts[status]=""
     subcommands_opts[resize]="s: -size=s k: -key=k"
-    subcommands_opts[check]="-ignore-swap"
+    subcommands_opts[check]=""
 #    subcommands_opts[translate]=""
     
     ### Detect subcommand

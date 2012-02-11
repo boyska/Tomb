@@ -129,7 +129,7 @@ class TombOpenWizard(QtGui.QWizard):
         button = page.group.checkedButton()
         path = button.property('path').toPyObject()
         if path:
-            return path
+            return str(path)
         method_type = button.property('keymethod_type').toPyObject()
         if method_type == 'fs':
             path = 'file://' + QtGui.QFileDialog.getOpenFileName(self,

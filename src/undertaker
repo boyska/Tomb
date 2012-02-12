@@ -168,6 +168,33 @@ function undertaker_scheme() {
             done
             ;;
 
+        dmesg)
+            ###despite the name, it depends on udisks as for mounting
+            while true; do
+                device=$(dmesg -l info -t| tail -n 12 | sed '/^ sd.:/!d;s/^.*: \(sd.[0-9]*\)/\1/' | tail -n 1)
+                sleep 0.1 #is it really needed?
+                if [[ -z $device ]]; then
+                    echo -n . >&2
+                    continue
+                fi
+                device="/dev/${device}"
+                udisks --mount $device > /dev/null
+                mountpoint=`egrep "^${device} " /etc/mtab|cut -d ' ' -f2`
+                if [[ -n $mountpoint ]]; then
+                    undertaker_scheme ${print_path[@]} file ${mountpoint}${keypath}
+                else
+                    _warning "Could not mount $device"
+                    udisks --unmount $device > /dev/null #just to be sure
+                    continue
+                fi
+                ret=$?
+                udisks --unmount $device
+                if [[ $ret == 0 ]]; then
+                    return 0
+                fi
+            done
+            ;;
+
         near)
             ###Given the path to the tomb, search the key near to that
             undertaker_scheme file ${keypath}.key

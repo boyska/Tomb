@@ -134,11 +134,10 @@ function undertaker_scheme() {
                 typeset fifo
                 fifo=`safe_dir udisks_fifo`/udisks_fifo.$$
                 { #try: avoid keeping udisks alive forever, and cleans something
-                    rm $fifo
+                    rm -f $fifo
                     mkfifo $fifo
                     udisks --monitor > $fifo &
                     udiskspid=$!
-#                     < $fifo
                     device=$(awk '/added:.*sd[a-z][0-9]/ {
                             match($0, /sd[a-z][0-9]/, Arr)
                                 printf "%s\n", Arr[0]
@@ -244,4 +243,5 @@ main $*
 # 0 is for everything went fine
 # 64 is for "not supported/the problem won't be solved by polling". This is for things like: unmet dependencies, not supported at all, etc
 # everything else means just "error". Use 1, please. So other codes can be used if needed
-#
+
+# vim: set shiftwidth=4 expandtab: syntax=zsh

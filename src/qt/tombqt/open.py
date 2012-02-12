@@ -77,7 +77,7 @@ class OpeningPage(QtGui.QWizardPage):
         if id != TombOpenWizard.OPENING_PAGE:
             return
         path = self.wizard().get_tombkeyfile()
-        if path.startswith('udisks:'):
+        if path.startswith('dmesg:'):
             self.ui.label.setText(self.ui.label.text() + \
                     '<br/><strong>Insert your usb key</strong>')
 #TODO: async
@@ -137,7 +137,7 @@ class TombOpenWizard(QtGui.QWizard):
                     filter="Tomb keys (*.tomb.key);;Buried keys (*.jpeg)")
             button.setProperty('path', path)
         elif method_type == 'usb':
-            path = 'udisks:///.tomb/' + os.path.basename(self.get_tombfile()) \
+            path = 'dmesg:///.tomb/' + os.path.basename(self.get_tombfile()) \
                     + '.key'
         else:
             path = button.property('path').toPyObject()

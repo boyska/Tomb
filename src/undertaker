@@ -171,24 +171,35 @@ function undertaker_scheme() {
         dmesg)
             ###despite the name, it depends on udisks as for mounting
             while true; do
-                device=$(dmesg -l info -t| tail -n 12 | sed '/^ sd.:/!d;s/^.*: \(sd.[0-9]*\)/\1/' | tail -n 1)
-                sleep 0.1 #is it really needed?
+                device=$(dmesg -l info -t| sed '/^ sd.:/!d;s/^.*: \(sd.[0-9]*\)/\1/' | tail -n 1)
                 if [[ -z $device ]]; then
-                    echo -n . >&2
+                    sleep 1
                     continue
                 fi
                 device="/dev/${device}"
-                udisks --mount $device > /dev/null
-                mountpoint=`egrep "^${device} " /etc/mtab|cut -d ' ' -f2`
-                if [[ -n $mountpoint ]]; then
-                    undertaker_scheme ${print_path[@]} file ${mountpoint}${keypath}
+                if ! df $device &> /dev/null; then 
+                    #not mounted, shall mount
+                    sleep 0.1 #is it really needed?
+                    if ! [[ -b $device ]]; then
+                        _warning "$device not found"
+                        sleep 1
+                        continue
+                    fi
+                    udisks --mount $device >&2
+                    wemounted=1
                 else
+                    wemounted=0
+                fi
+                mountpoint=`egrep "^${device} " /etc/mtab|cut -d ' ' -f2`
+                if ! [[ -n $mountpoint ]]; then
                     _warning "Could not mount $device"
-                    udisks --unmount $device > /dev/null #just to be sure
+                    [[ $wemounted == 1 ]] && udisks --unmount $device > /dev/null #just to be sure
+                    sleep 1
                     continue
                 fi
+                undertaker_scheme ${print_path[@]} file ${mountpoint}${keypath}
                 ret=$?
-                udisks --unmount $device
+                [[ $wemounted == 1 ]] && udisks --unmount $device > /dev/null #just to be sure
                 if [[ $ret == 0 ]]; then
                     return 0
                 fi

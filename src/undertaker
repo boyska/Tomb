@@ -153,7 +153,6 @@ function undertaker_scheme() {
                 sleep 1
                 udisks --mount $device > /dev/null #udisks print something to output. we hate output. we are the only one that can output. grrrr
                 ###get mountpoint for device
-                mountpoint=`egrep "^${device} " /etc/mtab|cut -d ' ' -f2`
                 if [[ -n $mountpoint ]]; then
                     undertaker_scheme ${print_path[@]} file ${mountpoint}${keypath}
                 else
@@ -168,38 +167,48 @@ function undertaker_scheme() {
             done
             ;;
 
-        dmesg)
-            ###despite the name, it depends on udisks as for mounting
+        dmesg) #This is not completely batch: can call sudo
+            last_dmesg_line=0
+#TODO: make it a while read device with a function that polls in background and feeds it
             while true; do
-                device=$(dmesg -l info -t| sed '/^ sd.:/!d;s/^.*: \(sd.[0-9]*\)/\1/' | tail -n 1)
+                device=$(dmesg -l info -t | \
+                    tail -n +$((last_dmesg_line + 1)) | \
+                    sed '/^ sd.:/!d;s/^.*: \(sd.[0-9]*\)/\1/' | cut -d ' ' -f 1 |\
+                    tail -n 1)
+                last_dmesg_line=`dmesg -l info -t|wc -l`
                 if [[ -z $device ]]; then
                     sleep 1
                     continue
                 fi
                 device="/dev/${device}"
-                if ! df $device &> /dev/null; then 
-                    #not mounted, shall mount
+                mountpoint=`safe_dir usbmnt`
+                if ! df |egrep "^$device" &> /dev/null; then #not mounted, shall mount
                     sleep 0.1 #is it really needed?
                     if ! [[ -b $device ]]; then
                         _warning "$device not found"
                         sleep 1
                         continue
                     fi
-                    udisks --mount $device >&2
-                    wemounted=1
+                    sudo-pinentry mount $device $mountpoint
+                    if [[ $? == 0 ]]; then
+                        echo "Success!"
+                        wemounted=1
+                    else
+                        wemounted=-1
+                    fi
                 else
                     wemounted=0
+                    mountpoint=`egrep "^${device} " /etc/mtab|cut -d ' ' -f2`
                 fi
-                mountpoint=`egrep "^${device} " /etc/mtab|cut -d ' ' -f2`
-                if ! [[ -n $mountpoint ]]; then
+                if [[ $wemounted == -1 ]]; then
                     _warning "Could not mount $device"
-                    [[ $wemounted == 1 ]] && udisks --unmount $device > /dev/null #just to be sure
+                    sudo-pinentry umount $device 2> /dev/null #just to be sure
                     sleep 1
                     continue
                 fi
                 undertaker_scheme ${print_path[@]} file ${mountpoint}${keypath}
                 ret=$?
-                [[ $wemounted == 1 ]] && udisks --unmount $device > /dev/null #just to be sure
+                [[ $wemounted == 1 ]] && sudo-pinentry umount $device > /dev/null
                 if [[ $ret == 0 ]]; then
                     return 0
                 fi

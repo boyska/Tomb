@@ -30,6 +30,8 @@ TRAPKILL() die "KILL signal caught, undertaker aborting."
 TRAPSTOP() die "STOP signal caught, undertaker aborting."
 
 # first of all source the tomb core functions
+source $(dirname $(readlink -f $0))/tomb ${tomb_opts[@]} source
+TOMBEXEC=undertaker
 which tomb > /dev/null
 if [[ $? != 0 ]]; then
     print "$fg[red][!]$fg[white] Tomb command not found, operation aborted." >&2; exit 1
@@ -191,7 +193,6 @@ function undertaker_scheme() {
                     fi
                     sudo-pinentry mount -o ro $device $mountpoint
                     if [[ $? == 0 ]]; then
-                        echo "Success!"
                         wemounted=1
                     else
                         wemounted=-1
@@ -254,8 +255,6 @@ function main() {
         for a in ${(k)opts}; do
             backupopts[$a]=${opts[$a]}
         done
-		source tomb ${tomb_opts[@]} source
-		TOMBEXEC=undertaker
         for a in ${(k)backupopts}; do
             opts[$a]=${backupopts[$a]}
         done

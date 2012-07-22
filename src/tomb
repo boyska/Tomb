@@ -1655,9 +1655,9 @@ main() {
     #    -force and NOT -f
 	main_opts=(q -quiet=q D -debug=D h -help=h v -version=v -no-color -ignore-swap)
     subcommands_opts[__default]=""
-    subcommands_opts[open]="f n -nohook=n k: -key=k o: -mount-options=o -ignore-swap"
+    subcommands_opts[open]="f n -nohook=n k: -key=k o: -mount-options=o"
     subcommands_opts[mount]=${subcommands_opts[open]}
-    subcommands_opts[create]="f s: -size=s -force k: -key=k -ignore-swap"
+    subcommands_opts[create]="f s: -size=s -force k: -key=k"
     subcommands_opts[passwd]="f"
     subcommands_opts[close]=""
     subcommands_opts[help]=""

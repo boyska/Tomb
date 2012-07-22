@@ -189,7 +189,7 @@ function undertaker_scheme() {
                         sleep 1
                         continue
                     fi
-                    sudo-pinentry mount $device $mountpoint
+                    sudo-pinentry mount -o ro $device $mountpoint
                     if [[ $? == 0 ]]; then
                         echo "Success!"
                         wemounted=1

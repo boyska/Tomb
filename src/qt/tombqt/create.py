@@ -5,9 +5,15 @@ from PyQt4 import QtCore
 from PyQt4 import QtGui
 from ui_create import Ui_Wizard
 
-if __name__ == '__main__':
-    parentdir = sys.path[0].split(os.sep)[:-1]
-    sys.path.append(os.sep.join(parentdir))
+if 'TOMBLIBDIR' in os.environ:
+    tomblibdir = os.path.abspath(os.environ['TOMBLIBDIR'])
+    if os.path.isdir(tomblibdir):
+        sys.path = [tomblibdir] + sys.path
+    else:
+        print \
+'''WARNING: you specified TOMBLIBDIR (probably because you are a tester, but it
+         is not a valid directory'''
+
 from tomblib.tomb import Tomb
 from worker import TombCreateThread
 
@@ -130,5 +136,8 @@ def run_create_wizard():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+    if 'TOMBDIR' in os.environ:
+        tombdir = os.path.abspath(os.environ['TOMBDIR'])
+        Tomb.tombexec = os.path.join(tombdir, 'tomb')
     run_create_wizard()
 

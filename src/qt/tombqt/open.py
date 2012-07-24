@@ -3,6 +3,16 @@ import os.path
 
 from PyQt4 import QtCore, QtGui
 
+import os
+if 'TOMBLIBDIR' in os.environ:
+    tomblibdir = os.path.abspath(os.environ['TOMBLIBDIR'])
+    if os.path.isdir(tomblibdir):
+        sys.path = [tomblibdir] + sys.path
+    else:
+        print \
+'''WARNING: you specified TOMBLIBDIR (probably because you are a tester, but it
+         is not a valid directory'''
+
 from tomblib.tomb import Tomb
 from tomblib.undertaker import Undertaker
 
@@ -155,8 +165,10 @@ def run_open_wizard():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    Undertaker.undertakerexec = '/home/davide/coding/projects/tomb/src/undertaker'
-    Tomb.tombexec = '/home/davide/coding/projects/tomb/src/tomb'
+    if 'TOMBDIR' in os.environ:
+        tombdir = os.path.abspath(os.environ['TOMBDIR'])
+        Undertaker.undertakerexec = os.path.join(tombdir, 'undertaker')
+        Tomb.tombexec = os.path.join(tombdir, 'tomb')
     run_open_wizard()
 
 

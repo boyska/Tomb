@@ -144,6 +144,11 @@ is just the same as not using --kdf at all: it will stick to the "classic"
 behaviour
 
 .B
+.IP "--kdf \fI<method>\fR"
+This will specify the KDF method to use for the tomb we're creating.
+Please note that no stable release of tomb supports KDF; if you use it,
+your tomb might be unusable with an older version of tomb.
+.B
 .IP "-n"
 Skip processing of post-hooks and bind-hooks if found inside the tomb.
 See the \fIHOOKS\fR section in this manual for more information.

@@ -166,6 +166,17 @@ check_bin() {
     # resize suite check bin!
     which e2fsck > /dev/null || die "Cannot find e2fsck. Please install it." 1
     which resize2fs > /dev/null || die "Cannot find resize2fs. Please install it." 1
+    
+    if which tomb-kdf-pbkdf2 &> /dev/null; then
+        KDF_PBKDF2="tomb-kdf-pbkdf2"
+    else
+        local our_pbkdf2
+        our_pbkdf2="$(dirname $(readlink -f $TOMBEXEC))/kdf/tomb-kdf-pbkdf2"
+        if which $our_pbkdf2 &> /dev/null; then
+            KDF_PBKDF2=$our_pbkdf2
+        fi
+    fi
+
 }
 
 # }}}
@@ -743,13 +754,27 @@ create_tomb() {
     fi
 
 
-#TODO: pass parameters with something like scrypt|20|0.3|300
     _verbose "KDF method chosen is: '`option_value --kdf`'"
-    case `option_value --kdf` in
+    kdf_method=$(cut -d: -f1 <<<`option_value --kdf` )
+    case $kdf_method in
         scrypt)
             scrypt_param=`stretcher|tr '\n' ' '|head -c -1`
             tombpass=`stretcher ${=scrypt_param} 2> /dev/null <<<${tombpass}`
             header="_KDF_scrypt_`tr ' ' _ <<<$scrypt_param`\n"
+            ;;
+        pbkdf2)
+#one parameter: iter time in seconds
+            seconds=$(cut -d: -f2 -s <<<`option_value --kdf`)
+            if [[ -z $seconds ]]; then
+                seconds=1
+            fi
+            local -i microseconds
+            microseconds=$((seconds*1000000))
+            _verbose "Microseconds: $microseconds"
+            pbkdf2_salt=`${KDF_PBKDF2}-gensalt`
+            pbkdf2_iter=`${KDF_PBKDF2}-getiter $microseconds`
+            tombpass=`${KDF_PBKDF2} $pbkdf2_salt $pbkdf2_iter 64 <<<${tombpass}` #64bytes=512bits is the key length (huge!)
+            header="_KDF_pbkdf2sha1_${pbkdf2_salt}_${pbkdf2_iter}_64\n"
             ;;
         ""|null)
         
@@ -942,17 +967,21 @@ mount_tomb() {
 #TODO: read the first line: if it looks like a KDF, do KDF
         firstline=`head -n1 < $tombkey`
         if [[ $firstline =~ '^_KDF_' ]]; then
-            _verbose "KDF `cut -d_ -f 3 <<<$firstline` is requested: `head -n1 < $tombkey`"
+            _verbose "KDF: `cut -d_ -f 3 <<<$firstline`"
             case `cut -d_ -f 3 <<<$firstline` in
                 scrypt)
+                    scrypt_param=`cut -d_ -f 4- <<<$firstline | tr '_' ' '`
                     tombpass=$(stretcher ${=scrypt_param} 2>/dev/null <<<$tombpass )
+                    ;;
+                pbkdf2sha1)
+                    pbkdf2_param=`cut -d_ -f 4- <<<$firstline | tr '_' ' '`
+                    tombpass=$(${KDF_PBKDF2} ${=pbkdf2_param} 2> /dev/null <<<$tombpass)
                     ;;
                 *)
                     _failure "No suitable program for KDF `cut -f 3 <<<$firstline`"
                     return 1
                     ;;
             esac
-            scrypt_param=`cut -d_ -f 4- <<<$firstline | tr '_' ' '`
         fi
         (gpg --batch --passphrase-fd 0 --no-tty --no-options \
                 -d "${tombkey}" 2> /dev/null <<< ${tombpass} ) \

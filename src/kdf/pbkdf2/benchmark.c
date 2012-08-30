@@ -4,9 +4,7 @@
 
 #include <sys/time.h>
 
-#include <openssl/x509.h>
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
+#include <gcrypt.h>
 
 static long bench(int ic) {
 	char *pass = "mypass";
@@ -18,7 +16,7 @@ static long bench(int ic) {
 	long microtime;
 
 	gettimeofday(&start, NULL);
-	PKCS5_PBKDF2_HMAC_SHA1(pass, strlen(pass), salt, salt_len, ic, result_len, result);
+	gcry_kdf_derive( pass, strlen(pass), GCRY_KDF_PBKDF2, GCRY_MD_SHA1, salt, salt_len, ic, result_len, result);
 	gettimeofday(&end, NULL);
 	microtime = 1000000*end.tv_sec+end.tv_usec - (1000000*start.tv_sec+start.tv_usec);
 
@@ -32,6 +30,19 @@ int main(int argc, char *argv[])
 	int tries=0;
 	if(argc >= 2)
 		sscanf(argv[1], "%ld", &desired_time);
+	if (!gcry_check_version ("1.5.0")) {
+		fputs ("libgcrypt version mismatch\n", stderr);
+		exit (2);
+	}
+	/* Allocate a pool of 16k secure memory.  This make the secure memory
+	available and also drops privileges where needed.  */
+	gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
+	/* It is now okay to let Libgcrypt complain when there was/is
+	a problem with the secure memory. */
+	gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
+	/* Tell Libgcrypt that initialization has completed. */
+	gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+
 
 	microtime = bench(ic);
 	while( abs(desired_time-microtime) > (desired_time/10) /*little difference */ 

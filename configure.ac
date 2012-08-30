@@ -89,7 +89,7 @@ dnl ---------------------------------------------------------------
 
 PKG_CHECK_MODULES(GTK2, [gtk+-2.0 >= 2.16], :,
   AC_MSG_ERROR([*** Gtk+2 >=2.16 development files not found!]))
-PKG_CHECK_MODULES(CRYPTO, [openssl], :, AC_MSG_ERROR([openssl development files not found]))
+AM_PATH_LIBGCRYPT([1.5.0], :,  AC_MSG_ERROR([gcrypt development files not found]))
 AC_SUBST([GTK2_CFLAGS])
 AC_SUBST([GTK2_LIBS])
 

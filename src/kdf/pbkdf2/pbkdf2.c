@@ -41,18 +41,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <openssl/x509.h>
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
+#include <gcrypt.h>
 
 /* TODO: move print_hex and hex_to_binary to utils.h, with separate compiling */
 void print_hex(unsigned char *buf, int len)
 {
-  int i;
+	int i;
 
-  for(i=0;i<len;i++)
-    printf("%02x", buf[i]);
-  printf("\n");
+	for(i=0;i<len;i++)
+		printf("%02x", buf[i]);
+	printf("\n");
 }
 
 int hex_to_binary(unsigned char *buf, char *hex)
@@ -71,61 +69,76 @@ int hex_to_binary(unsigned char *buf, char *hex)
 		if( ret != 1)
 			return -1;
 	}
-  *buf = 0;  // null terminate -- precaution
-  return count;
+	*buf = 0;  // null terminate -- precaution
+	return count;
 }
 
 int main(int argc, char *argv[])
 {
-  char *pass = NULL;
-  unsigned char *salt;
-  int salt_len;                  // salt length in bytes
-  int ic=0;                        // iterative count
-  int result_len;
-  unsigned char *result;       // result (binary - 32+16 chars)
-  int i;
+	char *pass = NULL;
+	unsigned char *salt;
+	int salt_len;                  // salt length in bytes
+	int ic=0;                        // iterative count
+	int result_len;
+	unsigned char *result;       // result (binary - 32+16 chars)
+	int i;
 
-  if ( argc != 4 ) {
-    fprintf(stderr, "usage: %s salt count len <passwd >binary_key_iv\n", argv[0]);
-    exit(10);
-  }
+	if ( argc != 4 ) {
+		fprintf(stderr, "usage: %s salt count len <passwd >binary_key_iv\n", argv[0]);
+		exit(10);
+	}
 
-  //TODO: move to base64decode
-  salt=calloc(strlen(argv[1])/2+3, sizeof(char));
-  salt_len=hex_to_binary(salt, argv[1]);
-  if( salt_len <= 0 ) {
-	  fprintf(stderr, "Error: %s is not a valid salt (it must be a hexadecimal string)\n", argv[1]);
-	  exit(1);
-  }
+	//TODO: move to base64decode
+	salt=calloc(strlen(argv[1])/2+3, sizeof(char));
+	salt_len=hex_to_binary(salt, argv[1]);
+	if( salt_len <= 0 ) {
+		fprintf(stderr, "Error: %s is not a valid salt (it must be a hexadecimal string)\n", argv[1]);
+		exit(1);
+	}
 
-  if( sscanf(argv[2], "%d", &ic) == 0 || ic<=0) {
-	  fprintf(stderr, "Error: count must be a positive integer\n");
-	  exit(1);
-  }
-  if( sscanf(argv[3], "%d", &result_len) == 0 || result_len<=0) {
-	  fprintf(stderr, "Error: result_len must be a positive integer\n");
-	  exit(1);
-  }
+	if( sscanf(argv[2], "%d", &ic) == 0 || ic<=0) {
+		fprintf(stderr, "Error: count must be a positive integer\n");
+		exit(1);
+	}
+	if( sscanf(argv[3], "%d", &result_len) == 0 || result_len<=0) {
+		fprintf(stderr, "Error: result_len must be a positive integer\n");
+		exit(1);
+	}
 
-  fscanf(stdin, "%ms", &pass);
-  if ( pass[strlen(pass)-1] == '\n' )
-    pass[strlen(pass)-1] = '\0';
+	fscanf(stdin, "%ms", &pass);
+	if ( pass[strlen(pass)-1] == '\n' )
+		pass[strlen(pass)-1] = '\0';
 
-  // PBKDF 2
-  result = calloc(result_len, sizeof(unsigned char*));
-  PKCS5_PBKDF2_HMAC_SHA1(pass, strlen(pass), salt, salt_len, ic, result_len, result);
-  print_hex(result, result_len);            // Key + IV   (as hex string)
+	// PBKDF 2
+	result = calloc(result_len, sizeof(unsigned char*));
+	if (!gcry_check_version ("1.5.0")) {
+		fputs ("libgcrypt version mismatch\n", stderr);
+		exit (2);
+	}
+	/* Allocate a pool of 16k secure memory.  This make the secure memory
+	available and also drops privileges where needed.  */
+	gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
+	/* It is now okay to let Libgcrypt complain when there was/is
+	a problem with the secure memory. */
+	gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
+	/* Tell Libgcrypt that initialization has completed. */
+	gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
 
-  //clear and free everything
-  for(i=0; i<result_len;i++)
-	  result[i]=0;
-  free(result);
-  for(i=0; i<strlen(pass); i++) //blank
-	  pass[i]=0;
-  free(pass);
-  for(i=0; i<strlen(argv[1])/2+3; i++) //blank
-	  salt[i]=0;
-  free(salt);
+	gcry_kdf_derive( pass, strlen(pass), GCRY_KDF_PBKDF2, GCRY_MD_SHA1, salt, salt_len, ic, result_len, result);
+	print_hex(result, result_len);            // Key + IV   (as hex string)
 
-  return(0);
+	//clear and free everything
+	for(i=0; i<result_len;i++)
+		result[i]=0;
+	free(result);
+	for(i=0; i<strlen(pass); i++) //blank
+		pass[i]=0;
+	free(pass);
+	for(i=0; i<strlen(argv[1])/2+3; i++) //blank
+		salt[i]=0;
+	free(salt);
+
+	return(0);
 }
+
+/* vim: set noexpandtab ts=4 sw=4: */

@@ -757,11 +757,6 @@ create_tomb() {
     _verbose "KDF method chosen is: '`option_value --kdf`'"
     kdf_method=$(cut -d: -f1 <<<`option_value --kdf` )
     case $kdf_method in
-        scrypt)
-            scrypt_param=`stretcher|tr '\n' ' '|head -c -1`
-            tombpass=`stretcher ${=scrypt_param} 2> /dev/null <<<${tombpass}`
-            header="_KDF_scrypt_`tr ' ' _ <<<$scrypt_param`\n"
-            ;;
         pbkdf2)
 #one parameter: iter time in seconds
             seconds=$(cut -d: -f2 -s <<<`option_value --kdf`)
@@ -969,10 +964,6 @@ mount_tomb() {
         if [[ $firstline =~ '^_KDF_' ]]; then
             _verbose "KDF: `cut -d_ -f 3 <<<$firstline`"
             case `cut -d_ -f 3 <<<$firstline` in
-                scrypt)
-                    scrypt_param=`cut -d_ -f 4- <<<$firstline | tr '_' ' '`
-                    tombpass=$(stretcher ${=scrypt_param} 2>/dev/null <<<$tombpass )
-                    ;;
                 pbkdf2sha1)
                     pbkdf2_param=`cut -d_ -f 4- <<<$firstline | tr '_' ' '`
                     tombpass=$(${KDF_PBKDF2} ${=pbkdf2_param} 2> /dev/null <<<$tombpass)

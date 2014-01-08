@@ -1356,7 +1356,13 @@ mount_tomb() {
     file ${tombdir}/${tombfile} | grep -i 'luks encrypted file' 2>&1 >/dev/null
     if [ $? != 0 ]; then
 	_warning "$1 is not a valid tomb file, operation aborted"
+        say "Usage: tomb open [-k KEY] foo.tomb [/mo/unt/poi/nt]"
 	return 1
+    fi
+    if ! [[ -d ${2} ]]; then
+        _warning "$2 is not a valid mountpoint, operation aborted"
+        say "Usage: tomb open [-k KEY] foo.tomb [/mo/unt/poi/nt]"
+        return 1
     fi
     tombname=${tombfile%%\.*}
     xxx "tomb found: ${tombdir}/${tombfile}"

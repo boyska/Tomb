@@ -1,0 +1,5 @@
+Tomb is a simple shell script. You don't actually NEED to install it, but of
+course you can.
+
+Just run "make install" and you are done. This will usually require root
+privileges, sudo, or something like that

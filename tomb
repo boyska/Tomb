@@ -482,6 +482,31 @@ check_bin() {
 
 # }}} - Commandline interaction
 
+# {{{ Utils functions
+# fromhuman accept arguments such as "5", "12MiB", "20KB"
+fromhuman() {
+  zmodload zsh/pcre
+  if [[ -z $1 ]]; then
+    return 1
+  fi
+  if [[ $1 -pcre-match '^\d+$' ]]; then
+    echo $1
+    return 0
+  fi
+  human="${1:u}"  # to uppercase
+  if ! [[ $human =~ '^[0-9]+[KMG]I?B$' ]]; then
+    return 1
+  fi
+  numeric=$(egrep -o '^[0-9]+' <<<$human)
+  modunit=$(egrep -o '[A-Z]*$' <<<$human)
+  typeset -A modunit_mult
+  modunit_mult=(KB 0.001 KIB 0.001024 MB 1 MIB 1 GB 1000 GIB 1024)
+  integer megabytes
+  megabytes=$(($numeric * ${modunit_mult[$modunit]}))
+  echo $megabytes
+}
+# }}} - Utils functions
+
 # {{{ Key operations
 
 # This function retrieves a tomb key specified on commandline or one
@@ -799,7 +824,7 @@ gen_key() {
 	    pbkdf2_iter=`tomb-kdb-pbkdf2-getiter $microseconds`
 	    # We use a length of 64bytes = 512bits (more than needed!?)
 	    tombpass=`tomb-kdb-pbkdf2 $pbkdf2_salt $pbkdf2_iter 64 <<<"${tombpass}"`
-	    
+
 	    header="_KDF_pbkdf2sha1_${pbkdf2_salt}_${pbkdf2_iter}_64\n"
 	}
     }
@@ -1066,11 +1091,14 @@ dig_tomb() {
 
 
     # require the specification of the size of the tomb (-s) in MB
+    if ! option_is_set -s; then
+        die "Size argument missing, use --size"
+    fi
     tombsize="`option_value -s`"
-
-    [ $tombsize ] || die "Size argument missing, use --size"
-
-    [[ $tombsize != <-> ]] && die "Size argument is not an integer"
+    tombsize=$(fromhuman $tombsize)
+    if [[ $? != "0" ]]; then
+        die "Specified size is not valid"
+    fi
 
     [[ $tombsize -lt 10 ]] && die "Tombs can't be smaller than 10 megabytes"
 

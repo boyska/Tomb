@@ -12,3 +12,11 @@ install:
 
 test:
 	make -C extras/test
+
+deb:
+	ln -fs doc/tomb.1 tomb.1
+	equivs-build  extras/equivs-tomb
+
+clean:
+	rm -f tomb.1
+	rm -f tomb_*.deb

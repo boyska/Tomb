@@ -1,14 +1,23 @@
 
 PREFIX ?= /usr/local
 
-all:
-	gcc -O2 -o tomb-kdb-pbkdf2 pbkdf2.c -lgcrypt
-	gcc -O2 -o tomb-kdb-pbkdf2-getiter benchmark.c -lgcrypt
-	gcc -O2 -o tomb-kdb-pbkdf2-gensalt gen_salt.c -lgcrypt
-	gcc -O2 -o hexencode hexencode.c
+all: hexencode tomb-kdb-pbkdf2 tomb-kdb-pbkdf2-getiter tomb-kdb-pbkdf2-gensalt
+
+tomb-kdb-pbkdf2: pbkdf2.o
+	gcc ${LDFLAGS} -o tomb-kdb-pbkdf2 pbkdf2.o -lgcrypt
+tomb-kdb-pbkdf2-getiter: benchmark.o
+	gcc ${LDFLAGS} -o tomb-kdb-pbkdf2-getiter benchmark.o -lgcrypt
+tomb-kdb-pbkdf2-gensalt: gen_salt.o
+	gcc ${LDFLAGS} -o tomb-kdb-pbkdf2-gensalt gen_salt.o -lgcrypt
+hexencode: hexencode.o
+	gcc ${LDFLAGS} -o hexencode hexencode.c
+
+%.o:%.c
+	    $(CC) ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -c -o $@ $<
+
 
 clean:
-	rm -f tomb-kdb-pbkdf2 tomb-kdb-pbkdf2-getiter tomb-kdb-pbkdf2-gensalt hexencode
+	rm -f tomb-kdb-pbkdf2 tomb-kdb-pbkdf2-getiter tomb-kdb-pbkdf2-gensalt hexencode *.deb *.o
 
 install:
 	install -Dm755 tomb-kdb-pbkdf2 ${DESTDIR}${PREFIX}/bin/tomb-kdb-pbkdf2
